@@ -33,6 +33,7 @@ _G.ApplyLighting = function()
     atm.Decay = Color3.fromRGB(150, 150, 150)
     atm.Parent = Lighting
 end 
+
 _G.ApplyMaterials = function()
     local Workspace = game:GetService("Workspace")
     
@@ -40,32 +41,57 @@ _G.ApplyMaterials = function()
         if obj:IsA("BasePart") then
             obj.CastShadow = false
             obj.Reflectance = 0
+            
+            -- Убиваем стекло и металл
             if obj.Material == Enum.Material.Glass or obj.Material == Enum.Material.Metal or obj.Material == Enum.Material.Neon then
                 obj.Material = Enum.Material.SmoothPlastic
+            end
+            
+            -- УБИРАЕМ ПРОЗРАЧНОСТЬ (Overdraw Killer)
+            if not obj.Parent:FindFirstChild("Humanoid") then
+                if obj.Transparency > 0 and obj.Transparency < 1 then
+                    obj.Transparency = 0 -- Делаем сплошным
+                end
             end
         end
     end
 end 
+
 _G.StartOptimizer = function()
     local Workspace = game:GetService("Workspace")
     
-    -- Удаляем существующие лампочки
+    -- 1. Отключаем лампочки, частицы и звуки
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj:IsA("Light") then
             obj.Enabled = false
         end
+        if (obj:IsA("ParticleEmitter") or obj:IsA("Trail")) and not obj.Parent:FindFirstChild("Humanoid") then
+            if obj:IsA("ParticleEmitter") then obj.Enabled = false end
+            if obj:IsA("Trail") then obj.Enabled = false end
+        end
+        if obj:IsA("Sound") then
+            obj:Destroy()
+        end
     end
 
-    -- Следим за новыми объектами (если карта подгружается)
+    -- 2. Следим за новыми объектами (если карта подгружается)
     Workspace.DescendantAdded:Connect(function(obj)
         if obj:IsA("Light") then
             obj.Enabled = false
         elseif obj:IsA("BasePart") then
             obj.CastShadow = false
+            -- Если появилось новое прозрачное стекло
+            if obj.Transparency > 0 and obj.Transparency < 1 and not obj.Parent:FindFirstChild("Humanoid") then
+                obj.Transparency = 0
+            end
+        elseif obj:IsA("Sound") then
+            obj:Destroy()
         end
     end)
 end 
-print("[Render] Инициализация легковесного движка...")
+
+-- Инициализация
+print("[Render] Инициализация тяжелой очистки...")
 
 if _G.ApplyLighting then _G.ApplyLighting() end
 if _G.ApplyMaterials then _G.ApplyMaterials() end
@@ -73,7 +99,7 @@ if _G.StartOptimizer then _G.StartOptimizer() end
 
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "Smart Render",
-    Text = "Свет переписан. Оптимизация включена.",
+    Text = "Тени, стекла и звуки отключены.",
     Duration = 5
 })
 
