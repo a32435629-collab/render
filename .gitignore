@@ -1,0 +1,14 @@
+# Системный мусор
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Настройки IDE и редакторов
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Временные файлы
+*.log
+*.tmp
